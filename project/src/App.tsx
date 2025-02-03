@@ -46,7 +46,7 @@ function App() {
     formData.append('image', selectedImage);
 
     try {
-      const response = await axios.post('http://localhost:3000/upload', formData, {
+      const response = await axios.post('https://img-converter.onrender.com/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
