@@ -14,9 +14,9 @@ app.use(cors());
 app.use(express.json());
 
 // Validate environment variables
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const GITHUB_OWNER = process.env.GITHUB_OWNER;
-const GITHUB_REPO = process.env.GITHUB_REPO;
+const GITHUB_TOKEN = process.env.GITHUBTOKEN;  // Matches GitHub Secret name
+const GITHUB_OWNER = process.env.GITHUBOWNER;  // Matches GitHub Secret name
+const GITHUB_REPO = process.env.GITHUBREPO;    // Matches GitHub Secret name
 const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main'; // Default to 'main' if not specified
 
 if (!GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
