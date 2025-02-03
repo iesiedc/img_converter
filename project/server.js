@@ -16,8 +16,7 @@ app.use(express.json());
 // Validate environment variables
 const GITHUB_TOKEN = process.env.GITHUBTOKEN;  // Use GitHub Secret
 const GITHUB_OWNER = process.env.GITHUBOWNER;  // Use GitHub Secret
-const GITHUB_REPO = process.env.GITHUBREPO;    // Use GitHub Secret
-const PORT = process.env.PORT || 3000;         // Default to 3000
+const GITHUB_REPO = process.env.GITHUBREPO;    // Use GitHub Secret       // Default to 3000
 
 if (!GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
   console.error('❌ Missing required GitHub Secrets.');
