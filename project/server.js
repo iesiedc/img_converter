@@ -14,9 +14,16 @@ app.use(cors());
 app.use(express.json());
 
 // Validate environment variables
-const GITHUB_TOKEN = process.env.GITHUBTOKEN;  // Matches GitHub Secret name
-const GITHUB_OWNER = process.env.GITHUBOWNER;  // Matches GitHub Secret name
-const GITHUB_REPO = process.env.GITHUBREPO;    // Matches GitHub Secret name
+const GITHUB_TOKEN = process.env.GITHUBTOKEN;  // Use GitHub Secret
+const GITHUB_OWNER = process.env.GITHUBOWNER;  // Use GitHub Secret
+const GITHUB_REPO = process.env.GITHUBREPO;    // Use GitHub Secret
+const PORT = process.env.PORT || 3000;         // Default to 3000
+
+if (!GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
+  console.error('❌ Missing required GitHub Secrets.');
+  process.exit(1);
+}
+
 const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main'; // Default to 'main' if not specified
 
 if (!GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
