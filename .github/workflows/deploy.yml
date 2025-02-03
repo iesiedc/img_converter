@@ -3,7 +3,7 @@ name: Deploy Server
 on:
   push:
     branches:
-      - main  # Change if using a different branch
+      - main  # Adjust branch if needed
 
 jobs:
   deploy:
@@ -15,14 +15,15 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'  # Adjust version if needed
+          node-version: '18'  # Adjust if needed
 
       - name: Install dependencies
         run: npm install
 
       - name: Run the server
         env:
-          GITHUBTOKEN: ${{ secrets.GITHUBTOKEN }}
-          GITHUBOWNER: ${{ secrets.GITHUBOWNER }}
-          GITHUBREPO: ${{ secrets.GITHUBREPO }}
+          GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
+          GITHUB_OWNER: ${{ secrets.GITHUBOWNER }}
+          GITHUB_REPO: ${{ secrets.GITHUBREPO }}
+          PORT: 3000
         run: node server.js  # Replace with your actual server file
