@@ -4,6 +4,7 @@ import multer from 'multer';
 import { Octokit } from 'octokit';
 import dotenv from 'dotenv';
 import { Buffer } from 'buffer';
+import axios from 'axios';  // Import Axios for pinging
 
 dotenv.config();
 
@@ -47,6 +48,20 @@ async function verifyRepoAccess() {
 }
 
 verifyRepoAccess();
+
+// 🔄 Function to Ping API Every 1 Minute
+async function pingServer() {
+  const url = 'https://iedc-03oe.onrender.com/api/test/ping';
+  try {
+    const response = await axios.get(url);
+    console.log(`✅ Ping successful: ${response.status} ${response.statusText}`);
+  } catch (error) {
+    console.error('❌ Ping failed:', error.message);
+  }
+}
+
+// Start pinging every 60 seconds
+setInterval(pingServer, 60 * 1000);
 
 app.post('/upload', upload.single('image'), async (req, res) => {
   try {
