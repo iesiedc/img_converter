@@ -151,3 +151,7 @@ app.listen(PORT, () => {
   console.log(`- Repository: ${GITHUB_REPO}`);
   console.log(`- Branch: ${GITHUB_BRANCH}`);
 });
+
+app.get('/ping', async (req, res) => {
+ console.log("server is fine ");
+});
