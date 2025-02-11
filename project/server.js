@@ -61,7 +61,7 @@ async function pingServer() {
 }
 
 // Start pinging every 60 seconds
-setInterval(pingServer, 60 * 2000);
+setInterval(pingServer, 60 * 10000);
 
 app.post('/upload', upload.single('image'), async (req, res) => {
   try {
