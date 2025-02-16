@@ -4,7 +4,8 @@ import multer from 'multer';
 import { Octokit } from 'octokit';
 import dotenv from 'dotenv';
 import { Buffer } from 'buffer';
-import axios from 'axios';  // Import Axios for pinging
+import axios from 'axios';
+import sharp from 'sharp';  // Import sharp for image conversion
 
 dotenv.config();
 
@@ -14,29 +15,18 @@ const upload = multer();
 app.use(cors());
 app.use(express.json());
 
-// Validate environment variables
-const GITHUB_TOKEN = process.env.GITHUBTOKEN;  // Use GitHub Secret
-const GITHUB_OWNER = process.env.GITHUBOWNER;  // Use GitHub Secret
-const GITHUB_REPO = process.env.GITHUBREPO;    // Use GitHub Secret       // Default to 3000
+const GITHUB_TOKEN = process.env.GITHUBTOKEN;
+const GITHUB_OWNER = process.env.GITHUBOWNER;
+const GITHUB_REPO = process.env.GITHUBREPO;
+const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
 
 if (!GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
   console.error('❌ Missing required GitHub Secrets.');
   process.exit(1);
 }
 
-const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main'; // Default to 'main' if not specified
-
-if (!GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
-  console.error('❌ Missing required environment variables:');
-  if (!GITHUB_TOKEN) console.error('- GITHUB_TOKEN');
-  if (!GITHUB_OWNER) console.error('- GITHUB_OWNER');
-  if (!GITHUB_REPO) console.error('- GITHUB_REPO');
-  process.exit(1);
-}
-
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
-// Verify repository access
 async function verifyRepoAccess() {
   try {
     await octokit.rest.repos.get({ owner: GITHUB_OWNER, repo: GITHUB_REPO });
@@ -60,7 +50,6 @@ async function pingServer() {
   }
 }
 
-// Start pinging every 60 seconds
 setInterval(pingServer, 60 * 10000);
 
 app.post('/upload', upload.single('image'), async (req, res) => {
@@ -69,39 +58,24 @@ app.post('/upload', upload.single('image'), async (req, res) => {
       return res.status(400).json({ error: '❌ No image file provided' });
     }
 
-    // Ensure images directory exists
-    try {
-      await octokit.rest.repos.getContent({ owner: GITHUB_OWNER, repo: GITHUB_REPO, path: 'images' });
-    } catch (error) {
-      if (error.status === 404) {
-        console.log('📂 "images" folder not found. Creating it...');
-        try {
-          await octokit.rest.repos.createOrUpdateFileContents({
-            owner: GITHUB_OWNER,
-            repo: GITHUB_REPO,
-            path: 'images/README.md',
-            message: 'Create images directory',
-            content: Buffer.from('# Images Directory\nThis directory contains uploaded images.').toString('base64'),
-            branch: GITHUB_BRANCH
-          });
-        } catch (createError) {
-          console.error('❌ Failed to create "images" folder:', createError.response?.data?.message || createError.message);
-          return res.status(500).json({ error: 'Failed to create images directory on GitHub' });
-        }
-      } else {
-        console.error('❌ Error checking "images" folder:', error.response?.data?.message || error.message);
-        return res.status(500).json({ error: 'GitHub API error while checking folder' });
-      }
+    let fileBuffer = req.file.buffer;
+    let fileName = req.file.originalname;
+    let fileExtension = fileName.split('.').pop().toLowerCase();
+
+    // If image is HEIC, convert it to JPG
+    if (fileExtension === 'heic' || fileExtension === 'heif') {
+      console.log('🔄 Converting HEIC to JPG...');
+      fileBuffer = await sharp(fileBuffer).jpeg({ quality: 100 }).toBuffer();
+      fileName = fileName.replace(/\.[^.]+$/, '.jpg'); // Change extension to JPG
     }
 
-    const sanitizedFileName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const filePath = `images/${Date.now()}-${sanitizedFileName}`;
-    const fileContent = req.file.buffer.toString('base64');
+    const fileContent = fileBuffer.toString('base64');
 
     let sha = null;
 
     try {
-      // Check if the file already exists
       const { data } = await octokit.rest.repos.getContent({
         owner: GITHUB_OWNER,
         repo: GITHUB_REPO,
@@ -117,16 +91,15 @@ app.post('/upload', upload.single('image'), async (req, res) => {
       console.log(`📂 File ${filePath} does not exist. Creating a new file...`);
     }
 
-    // Upload or update file
     try {
       const response = await octokit.rest.repos.createOrUpdateFileContents({
         owner: GITHUB_OWNER,
         repo: GITHUB_REPO,
         path: filePath,
-        message: `Upload image: ${req.file.originalname}`,
+        message: `Upload image: ${fileName}`,
         content: fileContent,
         branch: GITHUB_BRANCH,
-        ...(sha && { sha }) // Include SHA if updating existing file
+        ...(sha && { sha })
       });
 
       const imageUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${filePath}`;
@@ -134,7 +107,6 @@ app.post('/upload', upload.single('image'), async (req, res) => {
       res.json({ url: imageUrl });
     } catch (uploadError) {
       console.error('❌ GitHub API error during upload:', uploadError.response?.data?.message || uploadError.message);
-      console.error('Upload Error Details:', uploadError.response?.data || uploadError);
       res.status(500).json({ error: 'Failed to upload image to GitHub' });
     }
   } catch (error) {
